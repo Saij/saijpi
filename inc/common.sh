@@ -155,8 +155,8 @@ function enlarge_ext() {
   echo "Adding $size MB to partition $partition of $image"
   start=$(sfdisk -d $image | grep "$image$partition" | awk '{print $4-0}')
   offset=$(($start*512))
-  dd if=/dev/zero bs=1M count=$size >> $image
-  fdisk $image <<FDISK
+  dd if=/dev/zero bs=1M count=$size 2>/dev/null >> $image
+  fdisk $image &>/dev/null <<FDISK
 p
 d
 $partition
@@ -172,9 +172,9 @@ FDISK
   LODEV=$(losetup -f --show -o $offset $image)
   trap 'losetup -d $LODEV' EXIT
 
-  e2fsck -fy $LODEV
-  resize2fs -p $LODEV
-  losetup -d $LODEV
+  e2fsck -fy $LODEV &>/dev/null
+  resize2fs -p $LODEV &>/dev/null
+  losetup -d $LODEV &>/dev/null
 
   trap - EXIT
   echo "Resized parition $partition of $image to +$size MB"

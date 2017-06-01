@@ -37,11 +37,18 @@ pushd $SAIJPI_WORKSPACE
 
   if [ -z "$SAIJPI_ZIP_IMG" ] || [ ! -f "$SAIJPI_ZIP_IMG" ]
   then
+    die "Raspbian Image ZIP not found!"
+  fi
+
+  echo "Extracting image from $SAIJPI_ZIP_IMG"
+  unzip $SAIJPI_ZIP_IMG &>null
+  SAIJPI_IMG_PATH=`ls | grep '.img\|.raw' | head -n 1`
+
+  if [ -z "$SAIJPI_IMG_PATH" ] || [ ! -f "$SAIJPI_IMG_PATH" ]
+  then
     die "Raspbian Image not found!"
   fi
 
-  unzip $SAIJPI_ZIP_IMG
-  SAIJPI_IMG_PATH=`ls | grep '.img\|.raw' | head -n 1`
   export SAIJPI_BUILDBASE=$(basename $SAIJPI_IMG_PATH)
 
   if [ -n "$SAIJPI_IMAGE_ENLARGEROOT" ]
