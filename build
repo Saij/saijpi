@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+set -e
+
+[ -n "$LOG" ] || LOG="build.log"
+
+define(){ IFS='\n' read -r -d '' ${1} || true; }
+
+define SCRIPT <<'EOF'
+BUILD_SCRIPT__PATH=$(dirname $(realpath -s $BASH_SOURCE))
+source ${BUILD_SCRIPT__PATH}/inc/common.sh
+install_cleanup_trap
+
+SAIJPI_PATH=$(dirname $(realpath -s $0))
+
+BUILD_VARIANT=default
+BUILD_FLAVOR=default
+WORKSPACE_POSTFIX=
+
+if [ "$#" -gt 0 ]; then
+  BUILD_VARIANT=$1
+fi
+if [ "$#" -gt 1 ]; then
+  BUILD_FLAVOR=$2
+fi
+
+if [ $BUILD_VARIANT != 'default' ]; then
+  WORKSPACE_POSTFIX=-$BUILD_VARIANT
+
+  export VARIANT_BASE="$SAIJPI_PATH/variants/$BUILD_VARIANT"
+  [ -d $VARIANT_BASE ] || die "Could not find Variant $BUILD_VARIANT"
+
+  if [ $BUILD_FLAVOR == '' ] || [ $BUILD_FLAVOR == 'default' ]
+  then
+    VARIANT_CONFIG=$VARIANT_BASE/config
+    FLAVOR_CONFIG=
+  else
+    VARIANT_CONFIG=$VARIANT_BASE/config
+    FLAVOR_CONFIG=$VARIANT_BASE/config.$BUILD_FLAVOR
+  fi
+
+  if [ -n "$FLAVOR_CONFIG" ] && [ ! -f $FLAVOR_CONFIG ]
+  then
+    die "Could not find config file $FLAVOR_CONFIG"
+  fi
+fi
+
+echo -e "--> Building VARIANT $BUILD_VARIANT, FLAVOR $BUILD_FLAVOR"
+
+source $SAIJPI_PATH/config
+[ "$CONFIG_ONLY" == "yes" ] || source $SAIJPI_PATH/inc/saijpi
+EOF
+
+[ "$LOG" != "no" ] && (eval "$SCRIPT" 2>&1 | tee "$LOG") || eval "$SCRIPT"

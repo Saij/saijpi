@@ -34,10 +34,10 @@ fi
 [ -n "$SAIJPI_IMAGE_PATH" ] || SAIJPI_IMAGE_PATH=$SAIJPI_SCRIPT_PATH/image
 [ -n "$SAIJPI_IMAGE_RASPBIAN" ] || SAIJPI_IMAGE_RASPBIAN=yes
 
-[ -n "$SAIJPI_ZIP_IMG" ] || SAIJPI_ZIP_IMG=`ls -t $SAIJPI_IMAGE_PATH/*-raspbian*.zip | head -n 1`
+[ -n "$SAIJPI_ZIP_IMG" ] || SAIJPI_ZIP_IMG=`ls -t $SAIJPI_IMAGE_PATH/*-raspbian*.zip 2>/dev/null | head -n 1`
 
 [ -n "$SAIJPI_WORKSPACE" ] || SAIJPI_WORKSPACE=$SAIJPI_SCRIPT_PATH/workspace$WORKSPACE_POSTFIX
-[ -n "$SAIJPI_CHROOT_SCRIPT_PATH" ] || SAIJPI_CHROOT_SCRIPT_PATH=$SAIJPI_SCRIPT_PATH/chroot_script
+[ -n "$SAIJPI_CHROOT_SCRIPT_PATH" ] || SAIJPI_CHROOT_SCRIPT_PATH=$SAIJPI_SCRIPT_PATH/inc/chroot_script
 [ -n "$SAIJPI_MOUNT_PATH" ] || SAIJPI_MOUNT_PATH=$SAIJPI_WORKSPACE/mount
 
 # The root partiton of the image filesystem, 2 for raspbian

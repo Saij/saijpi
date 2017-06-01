@@ -35,7 +35,7 @@ You can build it by issuing the following commands::
 
     cd ..
     sudo modprobe loop
-    sudo bash -x ./build
+    sudo bash ./build
     
 Building SaijPi Variants
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,7 +44,7 @@ SaijPi supports building variants, which are builds with changes from the main r
 
 To build a variant use::
 
-    sudo bash -x ./build [Variant]
+    sudo bash ./build [Variant]
     
 Usage
 ~~~~~

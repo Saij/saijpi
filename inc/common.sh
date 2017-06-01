@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-function die () {
+function die() {
     echo >&2 "$@"
     exit 1
 }
@@ -95,7 +95,7 @@ function unmount_image() {
 
   if [ -n "$force" ]
   then
-    for process in $(sudo lsof $mount_path | awk '{print $2}')
+    for process in $(sudo lsof $mount_path 2>/dev/null | awk '{print $2}')
     do
       echo "Killing process id $process..."
       sudo kill -9 $process
@@ -121,10 +121,10 @@ function unmount_image() {
 }
 
 function cleanup() {
-    # make sure that all child processed die when we die
-    local pids=$(jobs -pr)
-    [ -n "$pids" ] && kill $pids && sleep 5 && kill -9 $pids
-    exit 0
+  # make sure that all child processed die when we die
+  local pids=$(jobs -pr)
+  [ -n "$pids" ] && kill $pids && sleep 5 && kill -9 $pids
+  exit 0
 }
 
 function install_fail_on_error_trap() {
@@ -141,7 +141,7 @@ function install_chroot_fail_on_error_trap() {
 
 function install_cleanup_trap() {
   set -e
-  trap "cleanup" SIGINT SIGTERM
+  trap "cleanup" SIGINT SIGTERM EXIT
  }
 
 function enlarge_ext() {
@@ -297,7 +297,7 @@ function is_in_apt(){
   fi
 }
 
-function remove_if_installed(){
+function remove_if_installed() {
   remove_extra_list=""
   for package in "$1"
   do
@@ -315,4 +315,12 @@ function systemctl_if_exists() {
     else
         echo "no systemctl, not running"
     fi
+}
+
+function pushd() {
+  command pushd "$@" > /dev/null
+}
+
+function popd() {
+  command popd "$@" > /dev/null
 }

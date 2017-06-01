@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# SaijPi generation script
+
+source $SAIJPI_SCRIPT_PATH/inc/common.sh
+
+function execute_chroot_script() {
+  # move SaijPi filesystem files
+  cp -vr --preserve=mode,timestamps $1/filesystem .
+
+  #black magic of qemu-arm-static
+  cp `which qemu-arm-static` usr/bin
+  
+  cp $2 chroot_script
+  chmod 755 chroot_script
+  cp $SAIJPI_SCRIPT_PATH/inc/common.sh common.sh
+  chmod 755 common.sh
+  
+  chroot . usr/bin/qemu-arm-static /bin/bash /chroot_script
+  
+  #cleanup
+  rm chroot_script
+  rm -rfv filesystem
+}
+
+mkdir -p $SAIJPI_WORKSPACE 
+mkdir -p $SAIJPI_MOUNT_PATH 
+
+install_cleanup_trap
+install_fail_on_error_trap $SAIJPI_MOUNT_PATH
+unmount_image $SAIJPI_MOUNT_PATH force || true
+
+pushd $SAIJPI_WORKSPACE
+  if [ -e *.img ]
+  then  
+    rm *.img
+  fi
+
+  if [ -z "$SAIJPI_ZIP_IMG" ] || [ ! -f "$SAIJPI_ZIP_IMG" ]
+  then
+    die "Raspbian Image not found!"
+  fi
+
+  unzip $SAIJPI_ZIP_IMG
+  SAIJPI_IMG_PATH=`ls | grep '.img\|.raw' | head -n 1`
+  export SAIJPI_BUILDBASE=$(basename $SAIJPI_IMG_PATH)
+
+  if [ -n "$SAIJPI_IMAGE_ENLARGEROOT" ]
+  then
+    # make our image a bit larger so we don't run into size problems...
+    enlarge_ext $SAIJPI_IMG_PATH $SAIJPI_ROOT_PARTITION $SAIJPI_IMAGE_ENLARGEROOT
+  fi
+
+  # mount root and boot partition
+  mount_image $SAIJPI_IMG_PATH $SAIJPI_ROOT_PARTITION $SAIJPI_MOUNT_PATH
+  if [ -n "$SAIJPI_APT_CACHE" ]
+  then
+    mkdir -p "$SAIJPI_APT_CACHE"
+    mount --bind "$SAIJPI_APT_CACHE" $SAIJPI_MOUNT_PATH/var/cache/apt
+  fi
+
+  # Edit pi filesystem
+  pushd $SAIJPI_MOUNT_PATH
+
+    # make QEMU boot (remember to return)
+    if [ "$SAIJPI_IMAGE_RASPBIAN" == "yes" ]; then
+      fixLd
+    fi
+
+    # if an additional pre-script is defined, execute that now
+    if [ -n "$SAIJPI_PRESCRIPT" ] && [ -f $SAIJPI_PRESCRIPT/chroot_script ]; then
+      echo "Injecting environment pre script from $SAIJPI_PRESCRIPT..."
+      execute_chroot_script $SAIJPI_PRESCRIPT $SAIJPI_PRESCRIPT/chroot_script
+    fi
+
+    # if building a variant, execute its pre-chroot script
+    if [ -n "$VARIANT_BASE" ] && [ -f $VARIANT_BASE/pre_chroot_script ]; then
+      echo "Injecting variant pre script from $VARIANT_BASE..."
+      execute_chroot_script $VARIANT_BASE $VARIANT_BASE/pre_chroot_script
+    fi
+ 
+    # execute the base chroot script
+    execute_chroot_script $SAIJPI_SCRIPT_PATH $SAIJPI_CHROOT_SCRIPT_PATH
+    
+    # if building a variant, execute its post-chroot script
+    if [ -n "$VARIANT_BASE" ] && [ -f $VARIANT_BASE/post_chroot_script ]; then
+      echo "Injecting variant post script from $VARIANT_BASE..."
+      execute_chroot_script $VARIANT_BASE $VARIANT_BASE/post_chroot_script
+    fi
+
+    # if an additional post-script is defined, execute that now
+    if [ -n "$SAIJPI_POSTSCRIPT" ] && [ -f $SAIJPI_POSTSCRIPT/chroot_script ]; then
+      echo "Injecting environment post script from $SAIJPI_POSTSCRIPT..."
+      execute_chroot_script $SAIJPI_POSTSCRIPT $SAIJPI_POSTSCRIPT/chroot_script
+    fi
+    if [ "$SAIJPI_IMAGE_RASPBIAN" == "yes" ]; then
+      restoreLd
+    fi
+  popd
+  
+  # unmount first boot, then root partition
+  unmount_image $SAIJPI_MOUNT_PATH
+  chmod 777 $SAIJPI_IMG_PATH
+
+  if [ -n "$SAIJPI_IMAGE_RESIZEROOT" ]
+  then
+    # resize image to minimal size + provided size
+    minimize_ext $SAIJPI_IMG_PATH $SAIJPI_ROOT_PARTITION $SAIJPI_IMAGE_RESIZEROOT
+  fi
+popd
