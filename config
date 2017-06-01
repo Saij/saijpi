@@ -1,0 +1,81 @@
+CONFIG_DIR=$(dirname $(realpath -s $BASH_SOURCE))
+
+# Import the variant config if we have one
+
+if [ -n "$VARIANT_CONFIG" ] && [ -f $VARIANT_CONFIG ]
+then
+  echo "Sourcing variant config $VARIANT_CONFIG..."
+  source $VARIANT_CONFIG
+fi
+
+# Import the flavor config if we have one
+
+if [ -n "$FLAVOR_CONFIG" ] && [ -f $FLAVOR_CONFIG ]
+then
+  echo "Sourcing flavor config $FLAVOR_CONFIG..."
+  source $FLAVOR_CONFIG
+fi
+
+# Import the local config if we have one
+
+if [ -f $CONFIG_DIR/config.local ]
+then
+  echo "Sourcing config.local..."
+  source $CONFIG_DIR/config.local
+fi
+
+###############################################################################
+# All our config settings must start with SAIJPI_
+
+[ -n "$SAIJPI_PRESCRIPT" ] || SAIJPI_PRESCRIPT=
+[ -n "$SAIJPI_POSTSCRIPT" ] || SAIJPI_POSTSCRIPT=
+
+[ -n "$SAIJPI_SCRIPT_PATH" ] || SAIJPI_SCRIPT_PATH=$CONFIG_DIR
+[ -n "$SAIJPI_IMAGE_PATH" ] || SAIJPI_IMAGE_PATH=$SAIJPI_SCRIPT_PATH/image
+[ -n "$SAIJPI_IMAGE_RASPBIAN" ] || SAIJPI_IMAGE_RASPBIAN=yes
+
+[ -n "$SAIJPI_ZIP_IMG" ] || SAIJPI_ZIP_IMG=`ls -t $SAIJPI_IMAGE_PATH/*-raspbian*.zip | head -n 1`
+
+[ -n "$SAIJPI_WORKSPACE" ] || SAIJPI_WORKSPACE=$SAIJPI_SCRIPT_PATH/workspace$WORKSPACE_POSTFIX
+[ -n "$SAIJPI_CHROOT_SCRIPT_PATH" ] || SAIJPI_CHROOT_SCRIPT_PATH=$SAIJPI_SCRIPT_PATH/chroot_script
+[ -n "$SAIJPI_MOUNT_PATH" ] || SAIJPI_MOUNT_PATH=$SAIJPI_WORKSPACE/mount
+
+# The root partiton of the image filesystem, 2 for raspbian
+[ -n "$SAIJPI_ROOT_PARTITION" ] || SAIJPI_ROOT_PARTITION=2
+
+# if set will enlarge root parition prior to build by provided size in MB
+[ -n "$SAIJPI_IMAGE_ENLARGEROOT" ] || SAIJPI_IMAGE_ENLARGEROOT=250
+
+# if set will resize root partition on image after build to minimum size + 
+# provided size in MB
+[ -n "$SAIJPI_IMAGE_RESIZEROOT" ] || SAIJPI_IMAGE_RESIZEROOT=200
+
+# a local directory on the build server to bind mount under /var/cache/apt
+[ -n "$SAIJPI_APT_CACHE" ] || SAIJPI_APT_CACHE=$SAIJPI_WORKSPACE/aptcache
+
+# a host:port combo for a apt-proxy (such as apt-cacher-ng) to use
+[ -n "$SAIJPI_APT_PROXY" ] || SAIJPI_APT_PROXY=
+
+[ -n "$SAIJPI_OVERRIDE_HOSTNAME" ] || SAIJPI_OVERRIDE_HOSTNAME=saijpi
+
+# WiringPi
+[ -n "$SAIJPI_INCLUDE_WIRINGPI" ] || SAIJPI_INCLUDE_WIRINGPI=yes
+
+###############################################################################
+# Rewrite any build urls that are not yet set if we have a repository mirror
+# configured.
+
+###############################################################################
+# Print and export the final configuration.
+
+echo "================================================================"
+echo "Using the following config:"
+
+vars=`compgen -A variable | grep '^SAIJPI_'`
+for var in $vars
+do
+	echo "$var = ${!var}"
+	eval export $var
+done
+
+echo "================================================================"

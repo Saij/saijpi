@@ -1,0 +1,3 @@
+# variant example, flavor default: custom config setting
+
+SAIJPI_EXAMPLE_CUSTOM="Hello there"

@@ -1,6 +1,8 @@
 SaijPi
 ======
 
+Original idea and scripty by `Guy Sheffer <https://github.com/guysoft>`_ for `OctoPi <https://github.com/guysoft/OctoPi>`_
+
 Developing
 ----------
 
@@ -25,7 +27,7 @@ You can build it by issuing the following commands::
     sudo apt-get install gawk util-linux realpath qemu-user-static git
     
     git clone https://github.com/Saij/SaijPi.git
-    cd SaijPi/src/image
+    cd SaijPi/image
     
     wget https://downloads.raspberrypi.org/raspbian_lite_latest -O jessie-lite-raspbian.zip
     - or -
@@ -38,7 +40,7 @@ You can build it by issuing the following commands::
 Building SaijPi Variants
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-SaijPi supports building variants, which are builds with changes from the main release build. An example and other variants are available in the folder ``src/variants/example``.
+SaijPi supports building variants, which are builds with changes from the main release build. An example and other variants are available in the folder ``variants/example``.
 
 To build a variant use::
 
@@ -47,6 +49,6 @@ To build a variant use::
 Usage
 ~~~~~
 
-#. If needed, override existing config settings by creating a new file ``src/config.local``. You can override all settings found in ``src/config``. If you need to override the path to the Raspbian image to use for building SaijPi, override the path to be used in ``ZIP_IMG``. By default the most recent file matching ``*-raspbian.zip`` found in ``src/image`` will be used.
-#. Run ``src/build`` as root.
-#. The final image will be created at the ``src/workspace``
+#. If needed, override existing config settings by creating a new file ``config.local``. You can override all settings found in ``config``. If you need to override the path to the Raspbian image to use for building SaijPi, override the path to be used in ``ZIP_IMG``. By default the most recent file matching ``*-raspbian.zip`` found in ``image`` will be used.
+#. Run ``build`` as root.
+#. The final image will be created at the ``workspace``
