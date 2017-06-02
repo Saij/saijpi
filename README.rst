@@ -28,11 +28,7 @@ You can build it by issuing the following commands::
     
     git clone https://github.com/Saij/SaijPi.git
     cd SaijPi/image
-    
     wget https://downloads.raspberrypi.org/raspbian_lite_latest -O jessie-lite-raspbian.zip
-    - or -
-    wget https://downloads.raspberrypi.org/raspbian_latest -O jessie-raspbian.zip
-
     cd ..
     sudo modprobe loop
     sudo bash ./build

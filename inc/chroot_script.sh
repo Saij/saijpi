@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+set -x
+set -e
+
+export LC_ALL=C
+
+source /common.sh
+install_cleanup_trap
+
+if [ -n "$SAIJPI_APT_PROXY" ]
+then
+  echo "Acquire::http { Proxy \"http://$SAIJPI_APT_PROXY\"; };" > /etc/apt/apt.conf.d/02SAIJPI_build_proxy
+fi
+
+# prevent any installed services from automatically starting
+echo exit 101 > /usr/sbin/policy-rc.d
+chmod +x /usr/sbin/policy-rc.d
+
+echo "Unpacking filesystem additions..."
+unpack /filesystem/home/pi    /home/pi  pi
+unpack /filesystem/home/root  /root     root
+unpack /filesystem/boot       /boot
+
+echo "Cleaning and updating apt..."
+apt-get update
+apt-get autoremove -y
+
+echo "Installing additional packages..."
+if [ -n "$SAIJPI_ADDITIONAL_PACKAGES" ]
+then
+  apt-get -y --force-yes install $SAIJPI_ADDITIONAL_PACKAGES
+fi
+
+echo "Reinstall iputils-ping"
+apt-get install --reinstall iputils-ping
+
+pushd /home/pi
+
+  if [ "$SAIJPI_INCLUDE_WIRINGPI" == "yes" ]
+  then
+    echo "Installing WiringPi"
+    apt-get -y --force-yes install wiringpi
+  fi
+  
+popd
+
+if [ -n "$SAIJPI_OVERRIDE_HOSTNAME" ]
+then
+  echo "Setting hostname to $SAIJPI_OVERRIDE_HOSTNAME"
+  echo "$SAIJPI_OVERRIDE_HOSTNAME" > /etc/hostname
+  sed -i -e "s@raspberrypi@$SAIJPI_OVERRIDE_HOSTNAME@g" /etc/hosts
+fi
+
+# allow network configuration via /boot/config/network.txt
+echo "Setting network settings"
+sed -i "s@iface wlan0 @iface wlan0-raspbian @g" /etc/network/interfaces
+sed -i "s@iface wlan1 @iface wlan1-raspbian @g" /etc/network/interfaces
+echo "mapping wlan0" >> /etc/network/interfaces
+echo "  script /root/bin/map_iface" >> /etc/network/interfaces
+echo "mapping wlan1" >> /etc/network/interfaces
+echo "  script /root/bin/map_iface" >> /etc/network/interfaces
+echo "source /boot/config/network.txt" >> /etc/network/interfaces
+
+# allow configuring multiple wifi networks via /boot/config/wpa-supplicant.txt
+mv /etc/wpa_supplicant/wpa_supplicant.conf /boot/config/wpa-supplicant.txt
+ln -s /boot/config/wpa-supplicant.txt /etc/wpa_supplicant/wpa_supplicant.conf
+cat <<EOT >> /etc/wpa_supplicant/wpa_supplicant.conf
+
+# This is only used to configure multiple wifi networks or other advanced wifi features.
+# take a look into octopi-network.txt instead if you only need basic wifi configuration
+# 'man -s 5 wpa_supplicant.conf' for advanced options
+#network={
+#  ssid="Your Wifi SSID"
+#  psk="supersecretwifipassword"
+#}
+
+## You can configure more than 1 wifi networks by adding more 'network' blocks
+#network={
+#  ssid="Another Wifi"
+#  psk="password"
+#}
+EOT
+
+# copy /etc/wpa_supplicant/ifupdown.sh to /etc/ifplugd/action.d/ifupdown - for wlan auto reconnect
+[ -f /etc/ifplugd/action.d/ifupdown ] && mv /etc/ifplugd/action.d/ifupdown /etc/ifplugd/action.d/ifupdown.original
+[ -f /etc/wpa_supplicant/ifupdown.sh ] && ln -s /etc/wpa_supplicant/ifupdown.sh /etc/ifplugd/action.d/ifupdown
+
+# prevent ntp updates from failing due to some Rpi3 weirdness, see also "Fix SSH" further below
+echo '/sbin/iptables -t mangle -I POSTROUTING 1 -o wlan0 -p udp --dport 123 -j TOS --set-tos 0x00' >> /etc/rc.local
+echo 'exit 0' >> /etc/rc.local
+
+echo "Finalizing setup..."
+# unpack root in the end, so etc file are not overwritten, might need to add two roots in the future
+unpack /filesystem/root /
+
+#####################################################################
+### setup services
+
+update-rc.d change_password defaults
+update-rc.d change_hostname defaults
+
+systemctl_if_exists enable check_wpa_link.service
+
+### Fix SSH
+echo "IPQoS 0x00" >> /etc/ssh/sshd_config
+
+echo "Cleaing up..."
+#cleanup
+apt-get clean
+apt-get autoremove -y
+
+rm -r /usr/sbin/policy-rc.d
+
+if [ -n "$SAIJPI_APT_PROXY" ]
+then
+  rm -r /etc/apt/apt.conf.d/02SAIJPI_build_proxy
+fi

@@ -61,6 +61,9 @@ fi
 # WiringPi
 [ -n "$SAIJPI_INCLUDE_WIRINGPI" ] || SAIJPI_INCLUDE_WIRINGPI=yes
 
+# Additional packages
+[ -n "$SAIJPI_ADDITIONAL_PACKAGES" ] || SAIJPI_ADDITIONAL_PACKAGES=
+
 ###############################################################################
 # Rewrite any build urls that are not yet set if we have a repository mirror
 # configured.
