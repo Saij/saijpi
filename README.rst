@@ -1,7 +1,7 @@
 SaijPi
 ======
 
-Original idea and scripty by `Guy Sheffer <https://github.com/guysoft>`_ for `OctoPi <https://github.com/guysoft/OctoPi>`_
+Original idea and scripts by `Guy Sheffer <https://github.com/guysoft>`_ for `OctoPi <https://github.com/guysoft/OctoPi>`_
 
 Developing
 ----------
