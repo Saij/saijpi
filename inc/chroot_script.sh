@@ -17,7 +17,6 @@ echo exit 101 > /usr/sbin/policy-rc.d
 chmod +x /usr/sbin/policy-rc.d
 
 echo "Unpacking filesystem additions..."
-unpack /filesystem/home/pi    /home/pi  pi
 unpack /filesystem/home/root  /root     root
 unpack /filesystem/boot       /boot
 
@@ -62,8 +61,8 @@ echo "  script /root/bin/map_iface" >> /etc/network/interfaces
 echo "source /boot/config/network.txt" >> /etc/network/interfaces
 
 # allow configuring multiple wifi networks via /boot/config/wpa-supplicant.txt
-mv /etc/wpa_supplicant/wpa_supplicant.conf /boot/config/wpa-supplicant.txt
-ln -s /boot/config/wpa-supplicant.txt /etc/wpa_supplicant/wpa_supplicant.conf
+mv /etc/wpa_supplicant/wpa_supplicant.conf /boot/config/wpa_supplicant.conf
+ln -s /boot/config/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf
 cat <<EOT >> /etc/wpa_supplicant/wpa_supplicant.conf
 
 # This is only used to configure multiple wifi networks or other advanced wifi features.
@@ -103,6 +102,18 @@ systemctl_if_exists enable check_wpa_link.service
 
 ### Fix SSH
 echo "IPQoS 0x00" >> /etc/ssh/sshd_config
+
+### Setup Hostname
+if [ -n "$SAIJPI_OVERRIDE_HOSTNAME" ]
+then
+  echo "$SAIJPI_OVERRIDE_HOSTNAME" > /boot/config/hostname.conf
+fi
+
+### Setup Password
+if [ -n "$SAIJPI_DEFAULT_PASSWORD" ]
+then
+  echo "$SAIJPI_DEFAULT_PASSWORD" > /boot/config/password.conf
+fi
 
 echo "Cleaing up..."
 #cleanup

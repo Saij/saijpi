@@ -5,14 +5,14 @@
 # Required-Stop:
 # Default-Start:     3
 # Default-Stop:
-# Short-Description: Change pi's hostname via /boot/octopi-hostname.txt
+# Short-Description: Change pi's hostname via /boot/config/hostname.conf
 # Description:
 ### END INIT INFO
 
 . /lib/lsb/init-functions
 
 do_start () {
-  text_file="/boot/octopi-hostname.txt"
+  text_file="/boot/config/hostname.conf"
   if [ ! -f "$text_file" ]
   then
     exit 0
@@ -20,6 +20,12 @@ do_start () {
 
   old_hostname=`hostname`
   new_hostname=`head -n1 "$text_file" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | tr -d '\n'`
+
+  if [ "$new_hostname" -eq "$old_hostname" ]
+  then
+    log_success_msg "Change not neccesary - old and new hostname are the same"
+    exit 0
+  fi
 
   if [ ! -n "$new_hostname" ]
   then
@@ -31,7 +37,6 @@ do_start () {
   sanitized_hostname=`echo "$new_hostname" | tr -cd '[[:alnum:]]-'` 
   if [ "$new_hostname" = "$sanitized_hostname" ]
   then
-    rm "$text_file"
     echo "$new_hostname" > /etc/hostname
     sed -i -e "s@$old_hostname@$new_hostname@g" /etc/hosts
 
@@ -44,17 +49,17 @@ do_start () {
 
 case "$1" in
   start|"")
-        do_start
-        ;;
+    do_start
+    ;;
   restart|reload|force-reload)
-        echo "Error: argument '$1' not supported" >&2
-        exit 3
-        ;;
+    echo "Error: argument '$1' not supported" >&2
+    exit 3
+    ;;
   stop)
-        # No-op
-        ;;
+    # No-op
+    ;;
   *)
-        echo "Usage: change_hostname [start|stop]" >&2
-        exit 3
-        ;;
+    echo "Usage: change_hostname [start|stop]" >&2
+    exit 3
+    ;;
 esac

@@ -3,10 +3,10 @@ set -e
 
 IFACE=$1
 
-if grep -q "^\s*iface $IFACE-octopi " /boot/octopi-network.txt
+if grep -q "^\s*iface $IFACE-saijpi " /boot/config/network.conf
 then
-	echo "$IFACE-octopi"
-	echo "Using /boot/octopi-network.txt for configuring $IFACE..." >> /var/log/map_iface.log
+	echo "$IFACE-saijpi"
+	echo "Using /boot/config/network.conf for configuring $IFACE..." >> /var/log/map_iface.log
 else
 	echo "$IFACE-raspbian"
 	echo "Using original Raspbian configuration for configuring $IFACE..." >> /var/log/map_iface.log
