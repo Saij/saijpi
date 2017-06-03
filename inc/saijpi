@@ -41,7 +41,7 @@ pushd $SAIJPI_WORKSPACE
   fi
 
   echo "Extracting image from $SAIJPI_ZIP_IMG"
-  unzip $SAIJPI_ZIP_IMG &>null
+  unzip $SAIJPI_ZIP_IMG
   SAIJPI_IMG_PATH=`ls | grep '.img\|.raw' | head -n 1`
 
   if [ -z "$SAIJPI_IMG_PATH" ] || [ ! -f "$SAIJPI_IMG_PATH" ]
