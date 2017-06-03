@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
 
+function pushdir() {
+  pushd "$@" > /dev/null
+}
+
+function popdir() {
+  popd "$@" > /dev/null
+}
+
 function die() {
-    echo >&2 "$@"
-    exit 1
+  echo >&2 "$@"
+  exit 1
 }
 
 function fixLd(){
@@ -52,10 +60,12 @@ function unpack() {
     owner=$3
   fi
 
+  echo "Unpacking files from $from to $to"
+
   # $from/. may look funny, but does exactly what we want, copy _contents_
   # from $from to $to, but not $from itself, without the need to glob -- see 
   # http://stackoverflow.com/a/4645159/2028598
-  cp -v -r --preserve=mode,timestamps $from/. $to
+  cp -r --preserve=mode,timestamps $from/. $to
   if [ -n "$owner" ]
   then
     chown -hR $owner:$owner $to
@@ -128,19 +138,16 @@ function cleanup() {
 }
 
 function install_fail_on_error_trap() {
-  set -e
   trap 'previous_command=$this_command; this_command=$BASH_COMMAND' DEBUG
-  trap 'if [ $? -ne 0 ]; then echo -e "\nexit $? due to $previous_command \nBUILD FAILED!" && echo "unmounting image..." && ( unmount_image $SAIJPI_MOUNT_PATH force || true ); fi;' EXIT
+  trap 'if [ $? -ne 0 ]; then echo -e "\nexit $? due to $previous_command \nBUILD FAILED!" && echo "unmounting image..." && ( unmount_image $SAIJPI_MOUNT_PATH force || true ); fi;' EXIT ERR
 }
 
 function install_chroot_fail_on_error_trap() {
-  set -e
   trap 'previous_command=$this_command; this_command=$BASH_COMMAND' DEBUG
-  trap 'if [ $? -ne 0 ]; then echo -e "\nexit $? due to $previous_command \nBUILD FAILED!"; fi;' EXIT
+  trap 'if [ $? -ne 0 ]; then echo -e "\nexit $? due to $previous_command \nBUILD FAILED!"; fi;' EXIT ERR
 }
 
 function install_cleanup_trap() {
-  set -e
   trap "cleanup" SIGINT SIGTERM EXIT
  }
 
@@ -174,7 +181,7 @@ FDISK
 
   e2fsck -fy $LODEV &>/dev/null
   resize2fs -p $LODEV &>/dev/null
-  losetup -d $LODEV &>/dev/null
+  losetup -d $LODEV
 
   trap - EXIT
   echo "Resized parition $partition of $image to +$size MB"
@@ -195,20 +202,20 @@ function shrink_ext() {
   LODEV=$(losetup -f --show -o $offset $image)
   trap 'losetup -d $LODEV' EXIT
 
-  e2fsck -fy $LODEV
+  e2fsck -fy $LODEV &> /dev/null
   
   e2ftarget_bytes=$(($size * 1024 * 1024))
   e2ftarget_blocks=$(($e2ftarget_bytes / 512 + 1))
 
   echo "Resizing file system to $e2ftarget_blocks blocks..."
-  resize2fs $LODEV ${e2ftarget_blocks}s
+  resize2fs $LODEV ${e2ftarget_blocks}s &> /dev/null
   losetup -d $LODEV
   trap - EXIT
 
   new_end=$(($start + $e2ftarget_blocks))
 
   echo "Resizing partition to end at $start + $e2ftarget_blocks = $new_end blocks..."
-  fdisk $image <<FDISK
+  fdisk $image &> /dev/null <<FDISK
 p
 d
 $partition
@@ -224,14 +231,14 @@ FDISK
   new_size=$((($new_end + 1) * 512))
   echo "Truncating image to $new_size bytes..."
   truncate --size=$new_size $image
-  fdisk -l $image
+  fdisk -l $image &> /dev/null
 
   echo "Resizing filesystem ..."
   LODEV=$(losetup -f --show -o $offset $image)
   trap 'losetup -d $LODEV' EXIT
 
-  e2fsck -fy $LODEV
-  resize2fs -p $LODEV
+  e2fsck -fy $LODEV &> /dev/null
+  resize2fs -p $LODEV &> /dev/null
   losetup -d $LODEV
   trap - EXIT
 }
@@ -251,7 +258,7 @@ function minimize_ext() {
   LODEV=$(losetup -f --show -o $offset $image)
   trap 'losetup -d $LODEV' EXIT
 
-  e2fsck -fy $LODEV
+  e2fsck -fy $LODEV &> /dev/null
   e2fblocksize=$(tune2fs -l $LODEV | grep -i "block size" | awk -F: '{print $2-0}')
   e2fminsize=$(resize2fs -P $LODEV 2>/dev/null | grep -i "mini" | awk -F: '{print $2-0}')
 
@@ -272,12 +279,14 @@ function minimize_ext() {
   echo "Actual size is $e2fsize_mb MB ($e2fsize_blocks blocks), Minimum size is $e2fminsize_mb MB ($e2fminsize file system blocks, $e2fminsize_blocks blocks)"
   echo "Resizing to $e2ftarget_mb MB ($e2ftarget_blocks blocks)" 
   
-  if [ $size_offset_mb -gt 0 ]; then
-	echo "Partition size is bigger then the desired size, shrinking"
-	shrink_ext $image $partition $(($e2ftarget_mb - 1)) # -1 to compensat rounding mistakes
-  elif [ $size_offset_mb -lt 0 ]; then
+  if [ $size_offset_mb -gt 0 ]
+  then
+    echo "Partition size is bigger then the desired size, shrinking"
+    shrink_ext $image $partition $(($e2ftarget_mb - 1)) # -1 to compensat rounding mistakes
+  elif [ $size_offset_mb -lt 0 ]
+  then
     echo "Partition size is lower then the desired size, enlarging"
-	enlarge_ext $image $partition $((-$size_offset_mb + 1)) # +1 to compensat rounding mistakes
+    enlarge_ext $image $partition $((-$size_offset_mb + 1)) # +1 to compensat rounding mistakes
   fi
 }
 
@@ -315,12 +324,4 @@ function systemctl_if_exists() {
     else
         echo "no systemctl, not running"
     fi
-}
-
-function pushd() {
-  command pushd "$@" > /dev/null
-}
-
-function popd() {
-  command popd "$@" > /dev/null
 }

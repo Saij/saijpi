@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-set -x
-set -e
-
 export LC_ALL=C
 
 source /common.sh
@@ -21,27 +18,27 @@ unpack /filesystem/home/root  /root     root
 unpack /filesystem/boot       /boot
 
 echo "Cleaning and updating apt..."
-apt-get update
-apt-get autoremove -y
+apt-get update &> /dev/null
+apt-get autoremove -y &> /dev/null
 
 echo "Installing additional packages..."
 if [ -n "$SAIJPI_ADDITIONAL_PACKAGES" ]
 then
-  apt-get -y --force-yes install $SAIJPI_ADDITIONAL_PACKAGES
+  apt-get -y --force-yes install $SAIJPI_ADDITIONAL_PACKAGES &>/dev/null
 fi
 
 echo "Reinstall iputils-ping"
-apt-get install --reinstall iputils-ping
+apt-get install --reinstall iputils-ping &>/dev/null
 
-pushd /home/pi
+pushdir /home/pi
 
   if [ "$SAIJPI_INCLUDE_WIRINGPI" == "yes" ]
   then
     echo "Installing WiringPi"
-    apt-get -y --force-yes install wiringpi
+    apt-get -y --force-yes install wiringpi &>/dev/null
   fi
   
-popd
+popdir
 
 if [ -n "$SAIJPI_OVERRIDE_HOSTNAME" ]
 then
@@ -115,10 +112,10 @@ then
   echo "$SAIJPI_DEFAULT_PASSWORD" > /boot/config/password.conf
 fi
 
-echo "Cleaing up..."
+echo "Cleaning up..."
 #cleanup
-apt-get clean
-apt-get autoremove -y
+apt-get clean &> /dev/null
+apt-get autoremove -y  &> /dev/null
 
 rm -r /usr/sbin/policy-rc.d
 
