@@ -55,7 +55,7 @@ echo "mapping wlan0" >> /etc/network/interfaces
 echo "  script /root/bin/map_iface" >> /etc/network/interfaces
 echo "mapping wlan1" >> /etc/network/interfaces
 echo "  script /root/bin/map_iface" >> /etc/network/interfaces
-echo "source /boot/config/network.txt" >> /etc/network/interfaces
+echo "source /boot/config/network.conf" >> /etc/network/interfaces
 
 # allow configuring multiple wifi networks via /boot/config/wpa-supplicant.txt
 mv /etc/wpa_supplicant/wpa_supplicant.conf /boot/config/wpa_supplicant.conf
@@ -63,7 +63,7 @@ ln -s /boot/config/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf
 cat <<EOT >> /etc/wpa_supplicant/wpa_supplicant.conf
 
 # This is only used to configure multiple wifi networks or other advanced wifi features.
-# take a look into octopi-network.txt instead if you only need basic wifi configuration
+# take a look into /boot/config/network.conf instead if you only need basic wifi configuration
 # 'man -s 5 wpa_supplicant.conf' for advanced options
 #network={
 #  ssid="Your Wifi SSID"
