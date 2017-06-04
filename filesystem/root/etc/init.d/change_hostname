@@ -21,12 +21,6 @@ do_start () {
   old_hostname=`hostname`
   new_hostname=`head -n1 "$text_file" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | tr -d '\n'`
 
-  if [ "$new_hostname" -eq "$old_hostname" ]
-  then
-    log_success_msg "Change not neccesary - old and new hostname are the same"
-    exit 0
-  fi
-
   if [ ! -n "$new_hostname" ]
   then
     log_failure_msg "No new host name provided, refusing to change to empty host name"
@@ -37,6 +31,7 @@ do_start () {
   sanitized_hostname=`echo "$new_hostname" | tr -cd '[[:alnum:]]-'` 
   if [ "$new_hostname" = "$sanitized_hostname" ]
   then
+    rm $text_file
     echo "$new_hostname" > /etc/hostname
     sed -i -e "s@$old_hostname@$new_hostname@g" /etc/hosts
 
