@@ -15,6 +15,7 @@ Requirements
 #. Bash
 #. git
 #. realpath
+#. unzip
 #. sudo (the script itself calls it, running as root without sudo won't work)
 
 Build SaijPi
@@ -24,11 +25,11 @@ SaijPi can be built from Debian, Ubuntu, Raspbian, or even SaijPi.
 Build requires about 2.5 GB of free space available.
 You can build it by issuing the following commands::
 
-    sudo apt-get install gawk util-linux realpath qemu-user-static git
+    sudo apt-get install gawk util-linux realpath qemu-user-static git unzip
     
     git clone https://github.com/Saij/SaijPi.git
     cd SaijPi/image
-    wget https://downloads.raspberrypi.org/raspbian_lite_latest -O jessie-lite-raspbian.zip
+    wget https://downloads.raspberrypi.org/raspbian_lite_latest -O stretch-lite-raspbian.zip
     cd ..
     sudo modprobe loop
     sudo bash ./build
